@@ -1,0 +1,47 @@
+---
+title: "AQI data of Baoji"
+author: "Yao Tian"
+date: "April 23, 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+# require(XML)
+# require(RCurl)
+library(XML)
+library(RCurl)
+library(httr)
+library(plotly)
+```
+
+## AQI data of Jan 2016 of Baoji City
+```{r,comment=FALSE,waring=FALSE,cache=FALSE,message=FALSE,error=FALSE}
+
+link = "https://www.aqistudy.cn/historydata/daydata.php?city=%E5%AE%9D%E9%B8%A1&month=201601"
+webpage = GET(link)
+webpage = content(webpage,as="text")
+web_con = htmlParse(webpage,asText = TRUE)
+col_names = xpathSApply(web_con,"//th",xmlValue)
+col_num = length(col_names)
+col_names[1] = "Date"
+col_names[3] = "Range"
+col_names[4] = "Quality level"
+col_names[11] = "Ranking"
+
+air_data = xpathSApply(web_con,"//td",xmlValue)
+pattern = "\\d{4}\\-\\d{2}\\-\\d{2}"
+data_index = grep(pattern,air_data)
+last_index = tail(data_index,1)+col_num-1;
+
+air_data_pure = air_data[1:last_index]
+
+air_data_mat = t(matrix(air_data_pure,nrow = col_num))
+air_data_df = data.frame(air_data_mat)
+names(air_data_df) = col_names
+
+sub_air_data_df = air_data_df[,1:2]
+sub_air_data_df$Date = as.Date(sub_air_data_df$Date)
+sub_air_data_df$AQI = as.numeric(as.character(sub_air_data_df$AQI))
+plot_ly(data=sub_air_data_df,x=~Date,y=~AQI,type="scatter")
+```
